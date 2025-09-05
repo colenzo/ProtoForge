@@ -15,6 +15,8 @@
 - Integrated deployment agent into `/genesis/idea` endpoint, processing generated code and test results.
 - Introduced `src/core/orchestrator.py` to manage the multi-agent workflow.
 - Refactored `/genesis/idea` endpoint to use the orchestrator for cleaner logic.
+- Introduced `src/core/knowledge_logger.py` to simulate logging events to the Knowledge Vault.
+- Integrated `knowledge_logger` into the orchestrator to log outcomes of code generation, testing, and deployment.
 **Learned:** [Key insights]
 **Blockers:** [Current challenges]
 **KPIs:** [Metric updates]
