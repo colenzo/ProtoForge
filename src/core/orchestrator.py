@@ -20,10 +20,10 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
     async def _run_with_nexus_check(protocol_name: str, action: str, func, *args, **kwargs):
         check_result = await perform_nexus_check(protocol_name, action)
         if check_result.status == "conflict_detected":
-            await log_to_knowledge_vault(f"{protocol_name.lower().replace(' ', '_')}_conflict", {"idea": idea, "message": check_result.message})
+            await log_to_knowledge_vault(f"{protocol_name.lower().replace(' ', '_')}_conflict", {"idea": idea, "message": check_result.message}, log_level="ERROR", source_agent="NexusManager")
             raise Exception(f"Nexus conflict detected: {check_result.message}")
         elif check_result.status == "waiting_on_dependency":
-            await log_to_knowledge_vault(f"{protocol_name.lower().replace(' ', '_')}_waiting", {"idea": idea, "message": check_result.message})
+            await log_to_knowledge_vault(f"{protocol_name.lower().replace(' ', '_')}_waiting", {"idea": idea, "message": check_result.message}, log_level="WARNING", source_agent="NexusManager")
             # In a real scenario, this might involve retries or a different handling
             # For now, we'll just proceed after the simulated delay
             pass
