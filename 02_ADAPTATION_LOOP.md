@@ -6,6 +6,8 @@
 - `src/main.py` as the FastAPI entry point.
 - `src/agents/`, `src/core/`, `src/api/`, `src/models/` subdirectories for code organization.
 - Implemented natural language interface endpoint (`/genesis/idea`) in `src/api/genesis.py` and integrated into `src/main.py`.
+- Created placeholder AI-driven code generation agent (`src/agents/code_generator.py`).
+- Integrated code generation agent into `/genesis/idea` endpoint.
 **Learned:** [Key insights]
 **Blockers:** [Current challenges]
 **KPIs:** [Metric updates]
