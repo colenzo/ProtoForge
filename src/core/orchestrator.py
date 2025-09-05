@@ -81,7 +81,7 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
             )
 
         # 4. Automated Testing
-        testing_input = TestingInput(code=generated_code.code)
+        testing_input = TestingInput(code=generated_code.code, file_structure=generated_code.file_structure, dependencies=generated_code.dependencies)
         testing_results = await _run_with_nexus_check("Automated Testing", "start", run_tests, testing_input)
         await log_to_knowledge_vault("testing_completed", {"idea": idea, "overall_status": testing_results.status, "test_results_summary": [r.status for r in testing_results.test_results]}, log_level="INFO", source_agent="TestingAgent")
         
