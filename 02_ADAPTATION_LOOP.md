@@ -17,6 +17,8 @@
 - Refactored `/genesis/idea` endpoint to use the orchestrator for cleaner logic.
 - Introduced `src/core/knowledge_logger.py` to simulate logging events to the Knowledge Vault.
 - Integrated `knowledge_logger` into the orchestrator to log outcomes of code generation, testing, and deployment.
+- Created placeholder automated security agent (`src/agents/security_agent.py`).
+- Integrated security agent into the orchestrator, performing scans after code generation.
 **Learned:** [Key insights]
 **Blockers:** [Current challenges]
 **KPIs:** [Metric updates]
