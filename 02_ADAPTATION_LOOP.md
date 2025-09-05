@@ -11,6 +11,8 @@
 - Created placeholder automated testing agent (`src/agents/testing_agent.py`).
 - Integrated testing agent into `/genesis/idea` endpoint, processing generated code.
 - Defined `GenesisResponse` model (`src/models/genesis_response.py`) to combine code generation and testing results.
+- Created placeholder automated deployment agent (`src/agents/deployment_agent.py`).
+- Integrated deployment agent into `/genesis/idea` endpoint, processing generated code and test results.
 **Learned:** [Key insights]
 **Blockers:** [Current challenges]
 **KPIs:** [Metric updates]
