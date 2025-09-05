@@ -98,7 +98,7 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
             )
 
         # 5. Automated Deployment
-        deployment_input = DeploymentInput(code=generated_code.code, test_status=testing_results.status)
+        deployment_input = DeploymentInput(code=generated_code.code, test_status=testing_results.status, file_structure=generated_code.file_structure, dependencies=generated_code.dependencies, infrastructure_results=infrastructure_results)
         deployment_results = await _run_with_nexus_check("Automated Deployment", "start", deploy_application, deployment_input)
         await log_to_knowledge_vault("deployment_completed", {"idea": idea, "status": deployment_results.status, "url": deployment_results.deployment_url}, log_level="INFO", source_agent="DeploymentAgent")
         

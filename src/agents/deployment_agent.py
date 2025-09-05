@@ -1,9 +1,16 @@
 import random
+import random
 from pydantic import BaseModel
+from typing import List, Dict, Optional
+
+from src.agents.infrastructure_agent import InfrastructureOutput
 
 class DeploymentInput(BaseModel):
     code: str
     test_status: str
+    file_structure: Dict[str, List[str]]
+    dependencies: List[str]
+    infrastructure_results: Optional[InfrastructureOutput] = None
     # Potentially add more parameters like target_environment, cloud_provider, etc.
 
 class DeploymentOutput(BaseModel):
@@ -15,6 +22,8 @@ class DeploymentOutput(BaseModel):
 async def deploy_application(input: DeploymentInput) -> DeploymentOutput:
     """Placeholder for AI-driven automated deployment logic."""
     print(f"Attempting deployment for code (first 100 chars): {input.code[:100]}... with test status: {input.test_status}")
+    print(f"File structure: {input.file_structure}, Dependencies: {input.dependencies}")
+    if input.infrastructure_results: print(f"Infrastructure status: {input.infrastructure_results.status}")
     
     deployment_status = "failure"
     deployment_message = "Deployment failed (placeholder)."
@@ -28,13 +37,24 @@ async def deploy_application(input: DeploymentInput) -> DeploymentOutput:
             deployment_url=deployment_url
         )
 
-    # Simulate different outcomes based on test status and random chance
-    if input.test_status == "success":
-        outcome = random.choices(['success', 'warnings', 'failed'], weights=[0.7, 0.2, 0.1], k=1)[0]
-    elif input.test_status == "warnings":
-        outcome = random.choices(['success', 'warnings', 'failed'], weights=[0.4, 0.4, 0.2], k=1)[0]
-    else: # Fallback for other statuses
-        outcome = random.choices(['success', 'warnings', 'failed'], weights=[0.3, 0.3, 0.4], k=1)[0]
+    if input.infrastructure_results and input.infrastructure_results.status == "failed":
+        deployment_message = "Deployment skipped due to failed infrastructure generation."
+        return DeploymentOutput(
+            status=deployment_status,
+            message=deployment_message,
+            deployment_url=deployment_url
+        )
+
+    # Simulate different outcomes based on test status, infrastructure status, and random chance
+    base_weights = [0.7, 0.2, 0.1] # success, warnings, failed
+    if input.test_status == "warnings":
+        base_weights = [0.4, 0.4, 0.2]
+    if input.infrastructure_results and input.infrastructure_results.status == "warnings":
+        base_weights = [0.5, 0.3, 0.2]
+    if input.test_status == "warnings" and input.infrastructure_results and input.infrastructure_results.status == "warnings":
+        base_weights = [0.3, 0.5, 0.2]
+
+    outcome = random.choices(['success', 'warnings', 'failed'], weights=base_weights, k=1)[0]
 
     if outcome == 'success':
         deployment_status = "success"
@@ -42,11 +62,11 @@ async def deploy_application(input: DeploymentInput) -> DeploymentOutput:
         deployment_url = "https://project-genesis-dummy-app.com/" + str(random.randint(1000, 9999))
     elif outcome == 'warnings':
         deployment_status = "warnings"
-        deployment_message = "Deployment completed with warnings (e.g., minor configuration issues)."
+        deployment_message = "Deployment completed with warnings (e.g., minor configuration issues or resource over-provisioning)."
         deployment_url = "https://project-genesis-dummy-app.com/" + str(random.randint(1000, 9999))
     elif outcome == 'failed':
         deployment_status = "failure"
-        deployment_message = "Deployment failed due to infrastructure or configuration error."
+        deployment_message = "Deployment failed due to infrastructure or configuration error (e.g., invalid credentials, resource limits)."
         deployment_url = None
     
     return DeploymentOutput(

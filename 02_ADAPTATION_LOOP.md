@@ -44,6 +44,8 @@
 - Enhanced `src/agents/code_generator.py` to generate different types of code (e.g., Flask, Pandas, simple scripts) based on input idea keywords, and to dynamically generate file structures and dependencies.
 - Enhanced `src/agents/testing_agent.py` to include `file_structure` and `dependencies` in its input, and to simulate more relevant test results based on code type.
 - Updated `src/core/orchestrator.py` to pass `file_structure` and `dependencies` to the `testing_agent`.
+- Enhanced `src/agents/deployment_agent.py` to include `file_structure`, `dependencies`, and `infrastructure_results` in its input, and to simulate more relevant deployment outcomes.
+- Updated `src/core/orchestrator.py` to pass `file_structure`, `dependencies`, and `infrastructure_results` to the `deployment_agent`.
 **Learned:** [Key insights]
 **Blockers:** [Current challenges]
 **KPIs:** [Metric updates]
