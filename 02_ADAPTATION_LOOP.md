@@ -39,6 +39,8 @@
 - Implemented conditional logic in `src/core/orchestrator.py` to handle integration results (last step).
 - Refined `src/core/nexus_manager.py` to simulate varied outcomes (ok, conflict, waiting) and introduce delays.
 - Enhanced `src/core/orchestrator.py` with a `_run_with_nexus_check` helper to manage Nexus checks, including conflict detection and simulated dependency waits.
+- Refined `src/core/knowledge_logger.py` to include `log_level`, `source_agent`, and `log_id` for more structured logging.
+- Updated `src/core/orchestrator.py` to utilize the enhanced `knowledge_logger` with detailed event logging.
 **Learned:** [Key insights]
 **Blockers:** [Current challenges]
 **KPIs:** [Metric updates]

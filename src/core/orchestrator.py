@@ -32,9 +32,10 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
     # 1. Code Generation
     try:
         generated_code = await _run_with_nexus_check("Code Generation", "start", generate_code, CodeGenerationInput(idea=idea))
-        await log_to_knowledge_vault("code_generation_completed", {"idea": idea, "status": generated_code.status, "message": generated_code.message})
+        await log_to_knowledge_vault("code_generation_completed", {"idea": idea, "status": generated_code.status, "message": generated_code.message}, log_level="INFO", source_agent="CodeGenerator")
         
         if generated_code.status == "failure":
+            await log_to_knowledge_vault("code_generation_failed_early_exit", {"idea": idea, "message": "Code generation failed, exiting orchestration."}, log_level="ERROR", source_agent="Orchestrator")
             return GenesisResponse(
                 idea=idea,
                 generated_code=generated_code,
@@ -47,9 +48,10 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
 
         # 2. Security Scan (Aegis Protocol)
         security_report = await _run_with_nexus_check("Security Scan", "start", run_security_scan, generated_code.code)
-        await log_to_knowledge_vault("security_scan_completed", {"idea": idea, "status": security_report.status, "findings_count": len(security_report.findings)})
+        await log_to_knowledge_vault("security_scan_completed", {"idea": idea, "status": security_report.status, "findings_count": len(security_report.findings)}, log_level="INFO", source_agent="SecurityAgent")
         
         if security_report.status == "failed":
+            await log_to_knowledge_vault("security_scan_failed_early_exit", {"idea": idea, "message": "Security scan failed, exiting orchestration."}, log_level="ERROR", source_agent="Orchestrator")
             return GenesisResponse(
                 idea=idea,
                 generated_code=generated_code,
@@ -64,9 +66,10 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
         # Assuming a summary of the generated code is enough for basic IaC generation
         infrastructure_input = InfrastructureInput(application_code_summary=generated_code.code[:200]) # Pass a summary
         infrastructure_results = await _run_with_nexus_check("Infrastructure Generation", "start", generate_infrastructure_code, infrastructure_input)
-        await log_to_knowledge_vault("infrastructure_generation_completed", {"idea": idea, "status": infrastructure_results.status, "iac_code_summary": infrastructure_results.iac_code[:100]})
+        await log_to_knowledge_vault("infrastructure_generation_completed", {"idea": idea, "status": infrastructure_results.status, "iac_code_summary": infrastructure_results.iac_code[:100]}, log_level="INFO", source_agent="InfrastructureAgent")
         
         if infrastructure_results.status == "failed":
+            await log_to_knowledge_vault("infrastructure_generation_failed_early_exit", {"idea": idea, "message": "Infrastructure generation failed, exiting orchestration."}, log_level="ERROR", source_agent="Orchestrator")
             return GenesisResponse(
                 idea=idea,
                 generated_code=generated_code,
@@ -80,9 +83,10 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
         # 4. Automated Testing
         testing_input = TestingInput(code=generated_code.code)
         testing_results = await _run_with_nexus_check("Automated Testing", "start", run_tests, testing_input)
-        await log_to_knowledge_vault("testing_completed", {"idea": idea, "overall_status": testing_results.status, "test_results_summary": [r.status for r in testing_results.test_results]})
+        await log_to_knowledge_vault("testing_completed", {"idea": idea, "overall_status": testing_results.status, "test_results_summary": [r.status for r in testing_results.test_results]}, log_level="INFO", source_agent="TestingAgent")
         
         if testing_results.status == "failure":
+            await log_to_knowledge_vault("testing_failed_early_exit", {"idea": idea, "message": "Automated testing failed, exiting orchestration."}, log_level="ERROR", source_agent="Orchestrator")
             return GenesisResponse(
                 idea=idea,
                 generated_code=generated_code,
@@ -96,9 +100,10 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
         # 5. Automated Deployment
         deployment_input = DeploymentInput(code=generated_code.code, test_status=testing_results.status)
         deployment_results = await _run_with_nexus_check("Automated Deployment", "start", deploy_application, deployment_input)
-        await log_to_knowledge_vault("deployment_completed", {"idea": idea, "status": deployment_results.status, "url": deployment_results.deployment_url})
+        await log_to_knowledge_vault("deployment_completed", {"idea": idea, "status": deployment_results.status, "url": deployment_results.deployment_url}, log_level="INFO", source_agent="DeploymentAgent")
         
         if deployment_results.status == "failure":
+            await log_to_knowledge_vault("deployment_failed_early_exit", {"idea": idea, "message": "Automated deployment failed, exiting orchestration."}, log_level="ERROR", source_agent="Orchestrator")
             return GenesisResponse(
                 idea=idea,
                 generated_code=generated_code,
@@ -113,7 +118,7 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
         # For demonstration, let's assume we integrate a dummy analytics service
         integration_input = IntegrationInput(service_name="Dummy Analytics", api_endpoint="https://api.dummy-analytics.com")
         integration_results = await _run_with_nexus_check("External Service Integration", "start", integrate_external_service, integration_input)
-        await log_to_knowledge_vault("integration_completed", {"idea": idea, "service": integration_input.service_name, "status": integration_results.status})
+        await log_to_knowledge_vault("integration_completed", {"idea": idea, "service": integration_input.service_name, "status": integration_results.status}, log_level="INFO", source_agent="IntegrationAgent")
         
         # No early return for integration failure, as it's the last step, but we log it.
         
@@ -127,6 +132,6 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
             integration_results=integration_results
         )
     except Exception as e:
-        await log_to_knowledge_vault("orchestration_error", {"idea": idea, "error": str(e)})
+        await log_to_knowledge_vault("orchestration_error", {"idea": idea, "error": str(e)}, log_level="CRITICAL", source_agent="Orchestrator")
         # Re-raise the exception or handle it as appropriate for the API
         raise e
