@@ -1,0 +1,14 @@
+# Initial Python dependencies for Project Genesis
+
+# FastAPI for API development
+fastapi
+
+# Uvicorn for ASGI server
+uvicorn
+
+# For natural language processing and AI models (placeholders)
+transformers
+pydantic
+
+# For managing environment variables
+python-dotenv
