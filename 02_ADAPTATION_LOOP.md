@@ -19,6 +19,8 @@
 - Integrated `knowledge_logger` into the orchestrator to log outcomes of code generation, testing, and deployment.
 - Created placeholder automated security agent (`src/agents/security_agent.py`).
 - Integrated security agent into the orchestrator, performing scans after code generation.
+- Created placeholder external service integration agent (`src/agents/integration_agent.py`).
+- Integrated integration agent into the orchestrator, simulating connections to external services.
 **Learned:** [Key insights]
 **Blockers:** [Current challenges]
 **KPIs:** [Metric updates]
