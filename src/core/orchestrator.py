@@ -39,6 +39,17 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
     security_report = await run_security_scan(generated_code.code)
     await log_to_knowledge_vault("security_scan_completed", {"idea": idea, "status": security_report.status, "findings_count": len(security_report.findings)})
     
+    if security_report.status == "failed":
+        return GenesisResponse(
+            idea=idea,
+            generated_code=generated_code,
+            security_report=security_report,
+            infrastructure_results=infrastructure_results,
+            testing_results=testing_results,
+            deployment_results=deployment_results,
+            integration_results=integration_results
+        )
+
     # 3. Infrastructure Generation (Terraform Protocol)
     await perform_nexus_check("Infrastructure Generation", "start")
     # Assuming a summary of the generated code is enough for basic IaC generation
