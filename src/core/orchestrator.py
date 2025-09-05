@@ -11,12 +11,29 @@ from src.core.nexus_manager import perform_nexus_check
 async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
     """Orchestrates the end-to-end Project Genesis process from idea to deployment."""
     
+    security_report = None
+    infrastructure_results = None
+    testing_results = None
+    deployment_results = None
+    integration_results = None
+
     # 1. Code Generation
     await perform_nexus_check("Code Generation", "start")
     code_gen_input = CodeGenerationInput(idea=idea)
     generated_code = await generate_code(code_gen_input)
     await log_to_knowledge_vault("code_generation_completed", {"idea": idea, "status": generated_code.status, "message": generated_code.message})
     
+    if generated_code.status == "failure":
+        return GenesisResponse(
+            idea=idea,
+            generated_code=generated_code,
+            security_report=security_report,
+            infrastructure_results=infrastructure_results,
+            testing_results=testing_results,
+            deployment_results=deployment_results,
+            integration_results=integration_results
+        )
+
     # 2. Security Scan (Aegis Protocol)
     await perform_nexus_check("Security Scan", "start")
     security_report = await run_security_scan(generated_code.code)
