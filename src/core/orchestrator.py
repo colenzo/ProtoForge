@@ -74,6 +74,17 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
     testing_results = await run_tests(testing_input)
     await log_to_knowledge_vault("testing_completed", {"idea": idea, "overall_status": testing_results.status, "test_results_summary": [r.status for r in testing_results.test_results]})
     
+    if testing_results.status == "failure":
+        return GenesisResponse(
+            idea=idea,
+            generated_code=generated_code,
+            security_report=security_report,
+            infrastructure_results=infrastructure_results,
+            testing_results=testing_results,
+            deployment_results=deployment_results,
+            integration_results=integration_results
+        )
+
     # 5. Automated Deployment
     await perform_nexus_check("Automated Deployment", "start")
     deployment_input = DeploymentInput(code=generated_code.code, test_status=testing_results.status)
