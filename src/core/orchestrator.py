@@ -6,7 +6,7 @@ from src.agents.integration_agent import integrate_external_service, Integration
 from src.agents.infrastructure_agent import generate_infrastructure_code, InfrastructureInput, InfrastructureOutput
 from src.models.genesis_response import GenesisResponse
 from src.core.knowledge_logger import log_to_knowledge_vault
-from src.core.nexus_manager import perform_nexus_check
+from src.core.nexus_manager import perform_nexus_check, NexusCheckResult
 
 async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
     """Orchestrates the end-to-end Project Genesis process from idea to deployment."""
@@ -17,13 +17,106 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
     deployment_results = None
     integration_results = None
 
+    async def _run_with_nexus_check(protocol_name: str, action: str, func, *args, **kwargs):
+        check_result = await perform_nexus_check(protocol_name, action)
+        if check_result.status == "conflict_detected":
+            await log_to_knowledge_vault(f"{protocol_name.lower().replace(' ', '_')}_conflict", {"idea": idea, "message": check_result.message})
+            raise Exception(f"Nexus conflict detected: {check_result.message}")
+        elif check_result.status == "waiting_on_dependency":
+            await log_to_knowledge_vault(f"{protocol_name.lower().replace(' ', '_')}_waiting", {"idea": idea, "message": check_result.message})
+            # In a real scenario, this might involve retries or a different handling
+            # For now, we'll just proceed after the simulated delay
+            pass
+        return await func(*args, **kwargs)
+
     # 1. Code Generation
-    await perform_nexus_check("Code Generation", "start")
-    code_gen_input = CodeGenerationInput(idea=idea)
-    generated_code = await generate_code(code_gen_input)
-    await log_to_knowledge_vault("code_generation_completed", {"idea": idea, "status": generated_code.status, "message": generated_code.message})
-    
-    if generated_code.status == "failure":
+    try:
+        generated_code = await _run_with_nexus_check("Code Generation", "start", generate_code, CodeGenerationInput(idea=idea))
+        await log_to_knowledge_vault("code_generation_completed", {"idea": idea, "status": generated_code.status, "message": generated_code.message})
+        
+        if generated_code.status == "failure":
+            return GenesisResponse(
+                idea=idea,
+                generated_code=generated_code,
+                security_report=security_report,
+                infrastructure_results=infrastructure_results,
+                testing_results=testing_results,
+                deployment_results=deployment_results,
+                integration_results=integration_results
+            )
+
+        # 2. Security Scan (Aegis Protocol)
+        security_report = await _run_with_nexus_check("Security Scan", "start", run_security_scan, generated_code.code)
+        await log_to_knowledge_vault("security_scan_completed", {"idea": idea, "status": security_report.status, "findings_count": len(security_report.findings)})
+        
+        if security_report.status == "failed":
+            return GenesisResponse(
+                idea=idea,
+                generated_code=generated_code,
+                security_report=security_report,
+                infrastructure_results=infrastructure_results,
+                testing_results=testing_results,
+                deployment_results=deployment_results,
+                integration_results=integration_results
+            )
+
+        # 3. Infrastructure Generation (Terraform Protocol)
+        # Assuming a summary of the generated code is enough for basic IaC generation
+        infrastructure_input = InfrastructureInput(application_code_summary=generated_code.code[:200]) # Pass a summary
+        infrastructure_results = await _run_with_nexus_check("Infrastructure Generation", "start", generate_infrastructure_code, infrastructure_input)
+        await log_to_knowledge_vault("infrastructure_generation_completed", {"idea": idea, "status": infrastructure_results.status, "iac_code_summary": infrastructure_results.iac_code[:100]})
+        
+        if infrastructure_results.status == "failed":
+            return GenesisResponse(
+                idea=idea,
+                generated_code=generated_code,
+                security_report=security_report,
+                infrastructure_results=infrastructure_results,
+                testing_results=testing_results,
+                deployment_results=deployment_results,
+                integration_results=integration_results
+            )
+
+        # 4. Automated Testing
+        testing_input = TestingInput(code=generated_code.code)
+        testing_results = await _run_with_nexus_check("Automated Testing", "start", run_tests, testing_input)
+        await log_to_knowledge_vault("testing_completed", {"idea": idea, "overall_status": testing_results.status, "test_results_summary": [r.status for r in testing_results.test_results]})
+        
+        if testing_results.status == "failure":
+            return GenesisResponse(
+                idea=idea,
+                generated_code=generated_code,
+                security_report=security_report,
+                infrastructure_results=infrastructure_results,
+                testing_results=testing_results,
+                deployment_results=deployment_results,
+                integration_results=integration_results
+            )
+
+        # 5. Automated Deployment
+        deployment_input = DeploymentInput(code=generated_code.code, test_status=testing_results.status)
+        deployment_results = await _run_with_nexus_check("Automated Deployment", "start", deploy_application, deployment_input)
+        await log_to_knowledge_vault("deployment_completed", {"idea": idea, "status": deployment_results.status, "url": deployment_results.deployment_url})
+        
+        if deployment_results.status == "failure":
+            return GenesisResponse(
+                idea=idea,
+                generated_code=generated_code,
+                security_report=security_report,
+                infrastructure_results=infrastructure_results,
+                testing_results=testing_results,
+                deployment_results=deployment_results,
+                integration_results=integration_results
+            )
+
+        # 6. External Service Integration (Meridian Protocol)
+        # For demonstration, let's assume we integrate a dummy analytics service
+        integration_input = IntegrationInput(service_name="Dummy Analytics", api_endpoint="https://api.dummy-analytics.com")
+        integration_results = await _run_with_nexus_check("External Service Integration", "start", integrate_external_service, integration_input)
+        await log_to_knowledge_vault("integration_completed", {"idea": idea, "service": integration_input.service_name, "status": integration_results.status})
+        
+        # No early return for integration failure, as it's the last step, but we log it.
+        
         return GenesisResponse(
             idea=idea,
             generated_code=generated_code,
@@ -33,90 +126,7 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
             deployment_results=deployment_results,
             integration_results=integration_results
         )
-
-    # 2. Security Scan (Aegis Protocol)
-    await perform_nexus_check("Security Scan", "start")
-    security_report = await run_security_scan(generated_code.code)
-    await log_to_knowledge_vault("security_scan_completed", {"idea": idea, "status": security_report.status, "findings_count": len(security_report.findings)})
-    
-    if security_report.status == "failed":
-        return GenesisResponse(
-            idea=idea,
-            generated_code=generated_code,
-            security_report=security_report,
-            infrastructure_results=infrastructure_results,
-            testing_results=testing_results,
-            deployment_results=deployment_results,
-            integration_results=integration_results
-        )
-
-    # 3. Infrastructure Generation (Terraform Protocol)
-    await perform_nexus_check("Infrastructure Generation", "start")
-    # Assuming a summary of the generated code is enough for basic IaC generation
-    infrastructure_input = InfrastructureInput(application_code_summary=generated_code.code[:200]) # Pass a summary
-    infrastructure_results = await generate_infrastructure_code(infrastructure_input)
-    await log_to_knowledge_vault("infrastructure_generation_completed", {"idea": idea, "status": infrastructure_results.status, "iac_code_summary": infrastructure_results.iac_code[:100]})
-    
-    if infrastructure_results.status == "failed":
-        return GenesisResponse(
-            idea=idea,
-            generated_code=generated_code,
-            security_report=security_report,
-            infrastructure_results=infrastructure_results,
-            testing_results=testing_results,
-            deployment_results=deployment_results,
-            integration_results=integration_results
-        )
-
-    # 4. Automated Testing
-    await perform_nexus_check("Automated Testing", "start")
-    testing_input = TestingInput(code=generated_code.code)
-    testing_results = await run_tests(testing_input)
-    await log_to_knowledge_vault("testing_completed", {"idea": idea, "overall_status": testing_results.status, "test_results_summary": [r.status for r in testing_results.test_results]})
-    
-    if testing_results.status == "failure":
-        return GenesisResponse(
-            idea=idea,
-            generated_code=generated_code,
-            security_report=security_report,
-            infrastructure_results=infrastructure_results,
-            testing_results=testing_results,
-            deployment_results=deployment_results,
-            integration_results=integration_results
-        )
-
-    # 5. Automated Deployment
-    await perform_nexus_check("Automated Deployment", "start")
-    deployment_input = DeploymentInput(code=generated_code.code, test_status=testing_results.status)
-    deployment_results = await deploy_application(deployment_input)
-    await log_to_knowledge_vault("deployment_completed", {"idea": idea, "status": deployment_results.status, "url": deployment_results.deployment_url})
-    
-    if deployment_results.status == "failure":
-        return GenesisResponse(
-            idea=idea,
-            generated_code=generated_code,
-            security_report=security_report,
-            infrastructure_results=infrastructure_results,
-            testing_results=testing_results,
-            deployment_results=deployment_results,
-            integration_results=integration_results
-        )
-
-    # 6. External Service Integration (Meridian Protocol)
-    await perform_nexus_check("External Service Integration", "start")
-    # For demonstration, let's assume we integrate a dummy analytics service
-    integration_input = IntegrationInput(service_name="Dummy Analytics", api_endpoint="https://api.dummy-analytics.com")
-    integration_results = await integrate_external_service(integration_input)
-    await log_to_knowledge_vault("integration_completed", {"idea": idea, "service": integration_input.service_name, "status": integration_results.status})
-    
-    # No early return for integration failure, as it's the last step, but we log it.
-    
-    return GenesisResponse(
-        idea=idea,
-        generated_code=generated_code,
-        security_report=security_report,
-        infrastructure_results=infrastructure_results,
-        testing_results=testing_results,
-        deployment_results=deployment_results,
-        integration_results=integration_results
-    )
+    except Exception as e:
+        await log_to_knowledge_vault("orchestration_error", {"idea": idea, "error": str(e)})
+        # Re-raise the exception or handle it as appropriate for the API
+        raise e

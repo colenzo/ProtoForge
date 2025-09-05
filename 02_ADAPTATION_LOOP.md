@@ -37,6 +37,8 @@
 - Implemented conditional logic in `src/core/orchestrator.py` to halt the process if deployment fails.
 - Refined `src/agents/integration_agent.py` to simulate varied outcomes (success, warnings, failed) and provide richer output.
 - Implemented conditional logic in `src/core/orchestrator.py` to handle integration results (last step).
+- Refined `src/core/nexus_manager.py` to simulate varied outcomes (ok, conflict, waiting) and introduce delays.
+- Enhanced `src/core/orchestrator.py` with a `_run_with_nexus_check` helper to manage Nexus checks, including conflict detection and simulated dependency waits.
 **Learned:** [Key insights]
 **Blockers:** [Current challenges]
 **KPIs:** [Metric updates]
