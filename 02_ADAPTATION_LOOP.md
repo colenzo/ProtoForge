@@ -29,6 +29,8 @@
 - Implemented conditional logic in `src/core/orchestrator.py` to halt the process if code generation fails.
 - Refined `src/agents/security_agent.py` to simulate varied outcomes (passed, warnings, failed) and provide richer output.
 - Implemented conditional logic in `src/core/orchestrator.py` to halt the process if security scan fails.
+- Refined `src/agents/infrastructure_agent.py` to simulate varied outcomes (success, warnings, failed) and provide richer output.
+- Implemented conditional logic in `src/core/orchestrator.py` to halt the process if IaC generation fails.
 **Learned:** [Key insights]
 **Blockers:** [Current challenges]
 **KPIs:** [Metric updates]
