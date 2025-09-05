@@ -21,6 +21,8 @@
 - Integrated security agent into the orchestrator, performing scans after code generation.
 - Created placeholder external service integration agent (`src/agents/integration_agent.py`).
 - Integrated integration agent into the orchestrator, simulating connections to external services.
+- Created placeholder Infrastructure as Code (IaC) generation agent (`src/agents/infrastructure_agent.py`).
+- Integrated IaC generation agent into the orchestrator, performing generation after security scans.
 **Learned:** [Key insights]
 **Blockers:** [Current challenges]
 **KPIs:** [Metric updates]

@@ -6,6 +6,7 @@ from src.agents.testing_agent import TestingOutput, TestResult
 from src.agents.deployment_agent import DeploymentOutput
 from src.agents.security_agent import SecurityReport
 from src.agents.integration_agent import IntegrationResult
+from src.agents.infrastructure_agent import InfrastructureOutput
 
 class GenesisResponse(BaseModel):
     idea: str
@@ -14,4 +15,5 @@ class GenesisResponse(BaseModel):
     deployment_results: Optional[DeploymentOutput] = None
     security_report: Optional[SecurityReport] = None
     integration_results: Optional[IntegrationResult] = None
+    infrastructure_results: Optional[InfrastructureOutput] = None
     # Potentially add more fields for deployment results, etc.
