@@ -12,3 +12,4 @@ pydantic
 
 # For managing environment variables
 python-dotenv
+requests

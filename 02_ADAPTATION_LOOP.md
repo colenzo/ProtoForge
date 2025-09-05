@@ -50,6 +50,8 @@
 - Updated `src/core/orchestrator.py` to pass `file_structure`, `dependencies`, and `deployment_results` to the `integration_agent`.
 - Enhanced `src/core/nexus_manager.py` to simulate resource contention, include a basic retry mechanism for dependencies, and refine conflict detection.
 - Updated `src/core/orchestrator.py` to utilize the enhanced `nexus_manager` and log Nexus check results with detailed parameters.
+- Created `cli.py` to provide a basic command-line interface for interacting with the Project Genesis API.
+- Added `requests` to `requirements.txt` as a dependency for the CLI.
 **Learned:** [Key insights]
 **Blockers:** [Current challenges]
 **KPIs:** [Metric updates]
