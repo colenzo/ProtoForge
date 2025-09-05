@@ -13,6 +13,8 @@
 - Defined `GenesisResponse` model (`src/models/genesis_response.py`) to combine code generation and testing results.
 - Created placeholder automated deployment agent (`src/agents/deployment_agent.py`).
 - Integrated deployment agent into `/genesis/idea` endpoint, processing generated code and test results.
+- Introduced `src/core/orchestrator.py` to manage the multi-agent workflow.
+- Refactored `/genesis/idea` endpoint to use the orchestrator for cleaner logic.
 **Learned:** [Key insights]
 **Blockers:** [Current challenges]
 **KPIs:** [Metric updates]

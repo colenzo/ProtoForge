@@ -1,10 +1,8 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from src.agents.code_generator import generate_code, CodeGenerationInput, GeneratedCode
-from src.agents.testing_agent import run_tests, TestingInput, TestingOutput
-from src.agents.deployment_agent import deploy_application, DeploymentInput, DeploymentOutput
 from src.models.genesis_response import GenesisResponse
+from src.core.orchestrator import orchestrate_genesis_process
 
 router = APIRouter()
 
@@ -16,21 +14,7 @@ async def process_idea(idea_input: IdeaInput):
     """Receives a natural language idea and initiates the project genesis process."""
     print(f"Received idea: {idea_input.idea}")
     
-    # Trigger code generation
-    code_gen_input = CodeGenerationInput(idea=idea_input.idea)
-    generated_code = await generate_code(code_gen_input)
+    # Orchestrate the entire genesis process
+    response = await orchestrate_genesis_process(idea_input.idea)
     
-    # Trigger automated testing
-    testing_input = TestingInput(code=generated_code.code)
-    testing_results = await run_tests(testing_input)
-    
-    # Trigger automated deployment
-    deployment_input = DeploymentInput(code=generated_code.code, test_status=testing_results.status)
-    deployment_results = await deploy_application(deployment_input)
-    
-    return GenesisResponse(
-        idea=idea_input.idea,
-        generated_code=generated_code,
-        testing_results=testing_results,
-        deployment_results=deployment_results
-    )
+    return response
