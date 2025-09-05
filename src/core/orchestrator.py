@@ -91,6 +91,17 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
     deployment_results = await deploy_application(deployment_input)
     await log_to_knowledge_vault("deployment_completed", {"idea": idea, "status": deployment_results.status, "url": deployment_results.deployment_url})
     
+    if deployment_results.status == "failure":
+        return GenesisResponse(
+            idea=idea,
+            generated_code=generated_code,
+            security_report=security_report,
+            infrastructure_results=infrastructure_results,
+            testing_results=testing_results,
+            deployment_results=deployment_results,
+            integration_results=integration_results
+        )
+
     # 6. External Service Integration (Meridian Protocol)
     await perform_nexus_check("External Service Integration", "start")
     # For demonstration, let's assume we integrate a dummy analytics service

@@ -33,6 +33,8 @@
 - Implemented conditional logic in `src/core/orchestrator.py` to halt the process if IaC generation fails.
 - Refined `src/agents/testing_agent.py` to simulate varied outcomes (success, warnings, failed) and provide richer output.
 - Implemented conditional logic in `src/core/orchestrator.py` to halt the process if testing fails.
+- Refined `src/agents/deployment_agent.py` to simulate varied outcomes (success, warnings, failed) and provide richer output, considering test status.
+- Implemented conditional logic in `src/core/orchestrator.py` to halt the process if deployment fails.
 **Learned:** [Key insights]
 **Blockers:** [Current challenges]
 **KPIs:** [Metric updates]
