@@ -41,6 +41,7 @@
 - Enhanced `src/core/orchestrator.py` with a `_run_with_nexus_check` helper to manage Nexus checks, including conflict detection and simulated dependency waits.
 - Refined `src/core/knowledge_logger.py` to include `log_level`, `source_agent`, and `log_id` for more structured logging.
 - Updated `src/core/orchestrator.py` to utilize the enhanced `knowledge_logger` with detailed event logging.
+- Enhanced `src/agents/code_generator.py` to generate different types of code (e.g., Flask, Pandas, simple scripts) based on input idea keywords, and to dynamically generate file structures and dependencies.
 **Learned:** [Key insights]
 **Blockers:** [Current challenges]
 **KPIs:** [Metric updates]
