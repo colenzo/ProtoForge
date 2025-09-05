@@ -109,6 +109,8 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
     integration_results = await integrate_external_service(integration_input)
     await log_to_knowledge_vault("integration_completed", {"idea": idea, "service": integration_input.service_name, "status": integration_results.status})
     
+    # No early return for integration failure, as it's the last step, but we log it.
+    
     return GenesisResponse(
         idea=idea,
         generated_code=generated_code,
