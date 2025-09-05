@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 
+from src.api.genesis import router as genesis_router
+
 app = FastAPI()
+
+app.include_router(genesis_router, prefix="/genesis", tags=["genesis"])
 
 @app.get("/")
 async def read_root():
