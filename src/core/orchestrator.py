@@ -116,7 +116,7 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
 
         # 6. External Service Integration (Meridian Protocol)
         # For demonstration, let's assume we integrate a dummy analytics service
-        integration_input = IntegrationInput(service_name="Dummy Analytics", api_endpoint="https://api.dummy-analytics.com")
+        integration_input = IntegrationInput(service_name="Dummy Analytics", api_endpoint="https://api.dummy-analytics.com", file_structure=generated_code.file_structure, dependencies=generated_code.dependencies, deployment_results=deployment_results)
         integration_results = await _run_with_nexus_check("External Service Integration", "start", integrate_external_service, integration_input)
         await log_to_knowledge_vault("integration_completed", {"idea": idea, "service": integration_input.service_name, "status": integration_results.status}, log_level="INFO", source_agent="IntegrationAgent")
         
