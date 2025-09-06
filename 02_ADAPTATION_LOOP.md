@@ -67,6 +67,9 @@
 - Modified `src/agents/testing_agent.py` to actually write generated code to a temporary directory, generate a simple test file, run `pytest`, and parse its output for test status.
 - Added `docker` to `requirements.txt`.
 - Modified `src/agents/deployment_agent.py` to actually write generated code to a temporary directory, create a `Dockerfile`, build a Docker image, run the Docker container, and parse its output for deployment status.
+- Created `src/dashboard/main.py` as a FastAPI application for a real-time log dashboard.
+- Created `src/dashboard/templates/index.html` for the dashboard frontend.
+- Modified `src/core/knowledge_logger.py` to send log events via HTTP POST to the dashboard's API endpoint.
 **Learned:** [Key insights]
 **Blockers:** [Current challenges]
 **KPIs:** [Metric updates]

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Project Genesis Dashboard</title>
+    <style>
+        body { font-family: monospace; background-color: #1e1e1e; color: #d4d4d4; margin: 0; padding: 20px; }
+        .log-entry { background-color: #252526; border-bottom: 1px solid #333; padding: 10px; margin-bottom: 5px; }
+        .log-entry:last-child { border-bottom: none; }
+        .log-id { color: #888; font-size: 0.8em; }
+        .timestamp { color: #9cdcfe; }
+        .event-type { color: #c586c0; font-weight: bold; }
+        .log-level-INFO { color: #569cd6; }
+        .log-level-WARNING { color: #dcdcaa; }
+        .log-level-ERROR { color: #f44747; }
+        .log-level-CRITICAL { color: #ff0000; font-weight: bold; }
+        .source-agent { color: #b5cea8; }
+        .data { color: #ce9178; white-space: pre-wrap; }
+        h1 { color: #d4d4d4; }
+    </style>
+</head>
+<body>
+    <h1>Project Genesis Dashboard</h1>
+    <div id="logs-container">
+        <!-- Logs will be appended here -->
+    </div>
+
+    <script>
+        const logsContainer = document.getElementById('logs-container');
+        const ws = new WebSocket("ws://localhost:8001/ws");
+
+        ws.onmessage = function(event) {
+            const logEntry = JSON.parse(event.data);
+            appendLog(logEntry);
+        };
+
+        ws.onopen = function(event) {
+            console.log("WebSocket connected.");
+        };
+
+        ws.onclose = function(event) {
+            console.log("WebSocket disconnected.");
+        };
+
+        ws.onerror = function(error) {
+            console.error("WebSocket error: ", error);
+        };
+
+        function appendLog(logEntry) {
+            const logDiv = document.createElement('div');
+            logDiv.className = 'log-entry';
+            logDiv.innerHTML = `
+                <span class="timestamp">${logEntry.timestamp}</span>
+                <span class="event-type">${logEntry.event_type}</span>
+                <span class="log-level-${logEntry.log_level}">${logEntry.log_level}</span>
+                ${logEntry.source_agent ? `<span class="source-agent">[${logEntry.source_agent}]</span>` : ''}
+                <div class="data">${JSON.stringify(logEntry.data, null, 2)}</div>
+                <div class="log-id">ID: ${logEntry.log_id}</div>
+            `;
+            logsContainer.prepend(logDiv); // Add new logs at the top
+        }
+
+        // Initial logs (if any, from server-side rendering)
+        const initialLogs = {{ logs | tojson }};
+        if (initialLogs) {
+            initialLogs.forEach(log => appendLog(log));
+        }
+    </script>
+</body>
+</html>
