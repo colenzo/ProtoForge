@@ -1,9 +1,9 @@
 import random
-import random
 import os
 import tempfile
 import shutil
 import subprocess
+import re # Import re for regex parsing
 from pydantic import BaseModel
 from typing import List, Dict
 
@@ -55,7 +55,13 @@ async def run_tests(input: TestingInput) -> TestingOutput:
         if "flask" in input.dependencies:
             test_file_content = f"""
 import pytest
-from {os.path.basename(main_app_file_path).replace('.py', '')} import app
+import os
+import sys
+
+# Add the temporary app directory to sys.path for import
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'app'))
+
+from app import app
 
 @pytest.fixture
 def client():
@@ -71,7 +77,13 @@ def test_hello_flask(client):
             test_file_content = f"""
 import pytest
 import pandas as pd
-from {os.path.basename(main_app_file_path).replace('.py', '')} import analyze_data_model
+import os
+import sys
+
+# Add the temporary scripts directory to sys.path for import
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'scripts'))
+
+from analyze import analyze_data_model
 
 def test_analyze_data_model():
     data = {{'col1': [1, 2, 3], 'col2': [4, 5, 6]}}
@@ -101,30 +113,46 @@ def test_generic_code_runs():
                 ["pytest", "-v", test_file_path],
                 capture_output=True,
                 text=True,
-                check=True, # Raise CalledProcessError for non-zero exit codes
+                check=False, # Do not raise CalledProcessError for non-zero exit codes, we parse output
                 cwd=tmpdir
             )
             print(f"[TESTING_AGENT] Pytest stdout:\n{result.stdout}")
             print(f"[TESTING_AGENT] Pytest stderr:\n{result.stderr}")
 
-            # Parse pytest output
-            if "== 1 passed in" in result.stdout:
-                test_results.append(TestResult(test_name="pytest_execution", status="passed", message="Pytest executed successfully and tests passed."))
-            else:
+            # Parse pytest output for detailed results
+            # Example: test_hello_flask PASSED
+            # Example: test_analyze_data_model FAILED
+            test_pattern = r"^(.*?)\s(PASSED|FAILED|SKIPPED|ERROR)"
+            for line in result.stdout.splitlines():
+                match = re.search(test_pattern, line)
+                if match:
+                    test_name = match.group(1).strip()
+                    status = match.group(2).lower()
+                    message = f"Test {test_name} {status}."
+                    test_results.append(TestResult(test_name=test_name, status=status, message=message))
+            
+            # Determine overall status
+            if any(t.status == "failed" for t in test_results):
+                overall_status = "failure"
+                overall_message = "Automated tests failed. One or more tests reported failures."
+            elif any(t.status == "warnings" for t in test_results):
                 overall_status = "warnings"
-                overall_message = "Pytest executed with warnings or some tests skipped."
-                test_results.append(TestResult(test_name="pytest_execution", status="warnings", message="Pytest output indicates warnings or non-passing tests."))
+                overall_message = "Automated tests completed with warnings."
+            elif any(t.status == "error" for t in test_results):
+                overall_status = "failure"
+                overall_message = "Automated tests encountered errors."
+            else:
+                overall_status = "success"
+                overall_message = "All automated tests passed successfully."
 
-        except subprocess.CalledProcessError as e:
-            overall_status = "failure"
-            overall_message = f"Pytest failed with errors. Exit code: {e.returncode}"
-            test_results.append(TestResult(test_name="pytest_execution", status="failed", message=f"Pytest failed: {e.stderr}"))
-            print(f"[TESTING_AGENT] Pytest failed stdout:\n{e.stdout}")
-            print(f"[TESTING_AGENT] Pytest failed stderr:\n{e.stderr}")
         except FileNotFoundError:
             overall_status = "failure"
             overall_message = "Pytest command not found. Is pytest installed?"
             test_results.append(TestResult(test_name="pytest_not_found", status="failed", message="Pytest executable not found."))
+        except Exception as e:
+            overall_status = "failure"
+            overall_message = f"An unexpected error occurred during testing: {e}"
+            test_results.append(TestResult(test_name="unexpected_error", status="failed", message=str(e)))
 
     return TestingOutput(
         status=overall_status,
