@@ -23,21 +23,56 @@ async def analyze_logs_for_insights(logs: List[Dict[str, Any]]) -> Dict[str, Any
         "error_rate": len(failed_events) / total_events if total_events > 0 else 0,
         "warning_rate": len(warning_events) / total_events if total_events > 0 else 0,
         "common_errors": {},
-        "suggested_improvements": []
+        "suggested_improvements": [],
+        "process_health_score": 100 # Start with perfect score
     }
 
-    # Simulate identifying common errors
+    # Simulate identifying common errors and their impact on health score
     for event in failed_events:
         event_type = event.get('event_type', 'unknown')
         insights["common_errors"][event_type] = insights["common_errors"].get(event_type, 0) + 1
-    
-    # Simulate suggesting improvements based on insights
-    if insights["error_rate"] > 0.1:
-        insights["suggested_improvements"].append("Review agents with high error rates for stability improvements.")
-    if insights["warning_rate"] > 0.2:
-        insights["suggested_improvements"].append("Investigate sources of warnings to prevent future issues.")
-    if "code_generation_failed_early_exit" in insights["common_errors"]:
-        insights["suggested_improvements"].append("Enhance code generation model's robustness for complex ideas.")
+        if event_type == "code_generation_failed_early_exit":
+            insights["suggested_improvements"].append("Enhance code generation model's robustness for complex ideas.")
+            insights["process_health_score"] -= 20
+        elif event_type == "security_scan_failed_early_exit":
+            insights["suggested_improvements"].append("Prioritize security vulnerability fixes and review security agent rules.")
+            insights["process_health_score"] -= 25
+        elif event_type == "infrastructure_generation_failed_early_exit":
+            insights["suggested_improvements"].append("Review IaC templates and infrastructure provisioning logic.")
+            insights["process_health_score"] -= 15
+        elif event_type == "testing_failed_early_exit":
+            insights["suggested_improvements"].append("Improve test coverage and reliability for generated code.")
+            insights["process_health_score"] -= 20
+        elif event_type == "deployment_failed_early_exit":
+            insights["suggested_improvements"].append("Investigate deployment environment stability and agent credentials.")
+            insights["process_health_score"] -= 10
+        elif event_type == "orchestration_error":
+            insights["suggested_improvements"].append("Review orchestrator logic for unhandled exceptions.")
+            insights["process_health_score"] -= 30
+
+    for event in warning_events:
+        event_type = event.get('event_type', 'unknown')
+        if event_type == "code_generation_completed" and event.get('data', {}).get('status') == "warnings":
+            insights["suggested_improvements"].append("Refine code generation prompts to reduce style/optimization warnings.")
+            insights["process_health_score"] -= 5
+        elif event_type == "security_scan_completed" and event.get('data', {}).get('status') == "warnings":
+            insights["suggested_improvements"].append("Address medium/low severity security findings proactively.")
+            insights["process_health_score"] -= 3
+        elif event_type == "infrastructure_generation_completed" and event.get('data', {}).get('status') == "warnings":
+            insights["suggested_improvements"].append("Optimize IaC for cost efficiency or resource utilization.")
+            insights["process_health_score"] -= 2
+        elif event_type == "testing_completed" and event.get('data', {}).get('overall_status') == "warnings":
+            insights["suggested_improvements"].append("Investigate flaky tests or performance bottlenecks.")
+            insights["process_health_score"] -= 5
+        elif event_type == "deployment_completed" and event.get('data', {}).get('status') == "warnings":
+            insights["suggested_improvements"].append("Review deployment configurations for minor issues.")
+            insights["process_health_score"] -= 2
+        elif event_type.endswith("_waiting"): # Nexus waiting
+            insights["suggested_improvements"].append("Optimize inter-protocol dependencies to reduce waiting times.")
+            insights["process_health_score"] -= 1
+
+    # Ensure health score doesn't go below zero
+    insights["process_health_score"] = max(0, insights["process_health_score"])
 
     await log_to_knowledge_vault("lumen_analysis_completed", insights, log_level="INFO", source_agent="LumenAnalyzer")
     _latest_lumen_insights = insights # Store the latest insights
@@ -54,7 +89,7 @@ async def update_adaptation_loop(insights: Dict[str, Any]):
     current_content = current_content_response['read_file_response']['content']
 
     # Prepare new entries
-    shipped_entry = f"- Lumen analysis performed. Error Rate: {insights.get('error_rate'):.2f}, Warning Rate: {insights.get('warning_rate'):.2f}."
+    shipped_entry = f"- Lumen analysis performed. Error Rate: {insights.get('error_rate'):.2f}, Warning Rate: {insights.get('warning_rate'):.2f}. Process Health Score: {insights.get('process_health_score')}."
     learned_entry = "\n".join([f"- {s}" for s in insights.get('suggested_improvements', ["No specific improvements suggested."]])
 
     # Find the current week's entry or create a new one
