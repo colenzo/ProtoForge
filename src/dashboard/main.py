@@ -19,8 +19,8 @@ active_connections: List[WebSocket] = []
 PROJECT_GENESIS_API_URL = "http://localhost:8000/genesis/idea"
 
 @app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request, "logs": log_store})
+async def read_root(request: Request, genesis_response: str = None):
+    return templates.TemplateResponse("index.html", {"request": request, "logs": log_store, "genesis_response": genesis_response})
 
 @app.post("/log")
 async def receive_log(log_entry: Dict[str, Any]):
@@ -39,9 +39,8 @@ async def submit_idea(request: Request, idea: str = Form(...)):
             response.raise_for_status()
             genesis_response = response.json()
             print(f"[DASHBOARD] Project Genesis API response: {json.dumps(genesis_response, indent=2)}")
-            # You might want to store this full response or send it via WebSocket
-            # For now, we'll just redirect back to the main page
-            return RedirectResponse(url="/", status_code=303)
+            # Render the template with the genesis_response
+            return templates.TemplateResponse("index.html", {"request": request, "logs": log_store, "genesis_response": json.dumps(genesis_response, indent=2)})
     except httpx.RequestError as e:
         print(f"[DASHBOARD] Error connecting to Project Genesis API: {e}")
         return HTMLResponse(content=f"<h1>Error: Could not connect to Project Genesis API. Is it running?</h1><p>{e}</p>", status_code=500)

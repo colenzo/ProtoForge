@@ -36,9 +36,11 @@
         </form>
     </div>
 
-    <div id="genesis-response-container" class="genesis-response" style="display: none;">
+    <div id="genesis-response-container" class="genesis-response">
+        {% if genesis_response %}
         <h2>Latest Project Genesis Output</h2>
-        <pre id="genesis-response-content"></pre>
+        <pre id="genesis-response-content">{{ genesis_response }}</pre>
+        {% endif %}
     </div>
 
     <div id="logs-container">
@@ -48,9 +50,6 @@
 
     <script>
         const logsContainer = document.getElementById('logs-container');
-        const genesisResponseContainer = document.getElementById('genesis-response-container');
-        const genesisResponseContent = document.getElementById('genesis-response-content');
-        const ideaForm = document.getElementById('idea-form');
 
         const ws = new WebSocket("ws://localhost:8001/ws");
 
@@ -85,47 +84,12 @@
             logsContainer.prepend(logDiv); // Add new logs at the top
         }
 
-        // Handle form submission via Fetch API to prevent full page reload
-        ideaForm.addEventListener('submit', async function(event) {
-            event.preventDefault();
-            const formData = new FormData(ideaForm);
-            const ideaText = formData.get('idea');
-
-            // Clear previous response and logs
-            genesisResponseContainer.style.display = 'none';
-            genesisResponseContent.textContent = '';
-            logsContainer.innerHTML = '<h2>Real-time Logs</h2>';
-
-            try {
-                const response = await fetch('/submit_idea', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                if (response.redirected) {
-                    // Follow the redirect manually if needed, or just let the browser handle it
-                    window.location.href = response.url;
-                } else if (response.ok) {
-                    const result = await response.json();
-                    genesisResponseContent.textContent = JSON.stringify(result, null, 2);
-                    genesisResponseContainer.style.display = 'block';
-                } else {
-                    const errorText = await response.text();
-                    genesisResponseContent.textContent = `Error: ${response.status} - ${errorText}`;
-                    genesisResponseContainer.style.display = 'block';
-                }
-            } catch (error) {
-                console.error('Error submitting idea:', error);
-                genesisResponseContent.textContent = `Network Error: ${error}`;
-                genesisResponseContainer.style.display = 'block';
-            }
-        });
-
         // Initial logs (if any, from server-side rendering)
         const initialLogs = {{ logs | tojson }};
         if (initialLogs) {
             initialLogs.forEach(log => appendLog(log));
         }
     </script>
+</body>
 </body>
 </html>
