@@ -65,6 +65,8 @@
 - Enhanced `src/core/file_writer.py` to parse multi-file content (using delimiters) and write it to the specified file structure, creating directories as needed.
 - Added `pytest` to `requirements.txt`.
 - Modified `src/agents/testing_agent.py` to actually write generated code to a temporary directory, generate a simple test file, run `pytest`, and parse its output for test status.
+- Added `docker` to `requirements.txt`.
+- Modified `src/agents/deployment_agent.py` to actually write generated code to a temporary directory, create a `Dockerfile`, build a Docker image, run the Docker container, and parse its output for deployment status.
 **Learned:** [Key insights]
 **Blockers:** [Current challenges]
 **KPIs:** [Metric updates]
