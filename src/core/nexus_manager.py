@@ -2,6 +2,7 @@ import random
 import asyncio
 from pydantic import BaseModel
 from collections import defaultdict
+from typing import List, Dict, Any, Optional
 
 # Simulate a global state for resource contention and active tasks
 _resource_locked = False
@@ -18,6 +19,7 @@ _PROTOCOL_CAPACITY = {
 class NexusCheckResult(BaseModel):
     status: str  # e.g., "ok", "conflict_detected", "waiting_on_dependency", "capacity_exceeded"
     message: str
+    instance_id: Optional[int] = None # New field for instance ID
 
 async def perform_nexus_check(protocol_name: str, action: str) -> NexusCheckResult:
     """Placeholder for Nexus Protocol's inter-protocol communication and conflict resolution logic."""
@@ -43,11 +45,18 @@ async def perform_nexus_check(protocol_name: str, action: str) -> NexusCheckResu
     
     status = "ok"
     message = f"Nexus check passed for {protocol_name} before {action}."
+    instance_id = None
+
+    if status == "ok":
+        _active_tasks[protocol_name] += 1 # Increment active tasks if check passes
+        instance_id = _active_tasks[protocol_name] # Assign instance ID
+        message += f" Assigned instance ID: {instance_id}."
 
     if outcome == 'conflict_detected':
         status = "conflict_detected"
         message = f"Nexus detected a conflict: {protocol_name} cannot proceed while a critical resource is in use. (Simulated conflict)."
         _resource_locked = True # Simulate resource becoming locked due to conflict
+        instance_id = None # No instance assigned on conflict
     elif outcome == 'waiting_on_dependency':
         status = "waiting_on_dependency"
         message = f"Nexus is waiting on a dependency for {protocol_name} before {action}. Simulating delay and retry..."
@@ -59,22 +68,24 @@ async def perform_nexus_check(protocol_name: str, action: str) -> NexusCheckResu
             if random.random() > 0.5: # 50% chance to resolve dependency
                 status = "ok"
                 message = f"Nexus dependency resolved for {protocol_name} before {action}."
+                _active_tasks[protocol_name] += 1 # Increment active tasks if check passes
+                instance_id = _active_tasks[protocol_name] # Assign instance ID
+                message += f" Assigned instance ID: {instance_id}."
                 break
         else:
             # If after retries, still waiting
             status = "waiting_on_dependency"
             message = f"Nexus dependency for {protocol_name} before {action} could not be resolved after retries. Still waiting."
+            instance_id = None # No instance assigned if still waiting
     
     if status == "ok" and _resource_locked and random.random() > 0.8: # Small chance to unlock resource if ok
         _resource_locked = False
         print("[NEXUS_MANAGER] Simulated resource unlocked.")
 
-    if status == "ok":
-        _active_tasks[protocol_name] += 1 # Increment active tasks if check passes
-
     return NexusCheckResult(
         status=status,
-        message=message
+        message=message,
+        instance_id=instance_id
     )
 
 def release_nexus_resource(protocol_name: str):
