@@ -63,6 +63,8 @@
 - Updated `src/agents/code_generator.py` to check for Lumen insights and adjust its code generation behavior (e.g., increase success probability) based on these insights.
 - Modified `src/agents/code_generator.py` to produce multi-file content with a delimiter, enabling the `file_writer` to create multiple files.
 - Enhanced `src/core/file_writer.py` to parse multi-file content (using delimiters) and write it to the specified file structure, creating directories as needed.
+- Added `pytest` to `requirements.txt`.
+- Modified `src/agents/testing_agent.py` to actually write generated code to a temporary directory, generate a simple test file, run `pytest`, and parse its output for test status.
 **Learned:** [Key insights]
 **Blockers:** [Current challenges]
 **KPIs:** [Metric updates]
