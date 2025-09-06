@@ -59,6 +59,8 @@
 - Integrated `run_lumen_feedback_loop` into `src/main.py` to run as a background task on application startup.
 - Enhanced `src/agents/code_generator.py` to simulate integration with a real AI code generation model, including API key loading via `python-dotenv`.
 - Modified `src/core/lumen_analyzer.py` to actually read and update `02_ADAPTATION_LOOP.md` with insights and suggested improvements.
+- Enhanced `src/core/lumen_analyzer.py` to store the latest insights, accessible by other agents.
+- Updated `src/agents/code_generator.py` to check for Lumen insights and adjust its code generation behavior (e.g., increase success probability) based on these insights.
 **Learned:** [Key insights]
 **Blockers:** [Current challenges]
 **KPIs:** [Metric updates]

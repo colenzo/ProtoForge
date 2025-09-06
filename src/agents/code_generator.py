@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from typing import List, Dict, Any
+from src.core.lumen_analyzer import get_latest_lumen_insights
 
 # Load environment variables from .env file
 load_dotenv()
@@ -95,7 +96,14 @@ async def generate_code(input: CodeGenerationInput) -> GeneratedCode:
         dependencies = ["fastapi", "uvicorn"]
 
     # Simulate different outcomes (minor issues) after initial generation
-    outcome_post_ai = random.choices(['ok', 'minor_issues'], weights=[0.8, 0.2], k=1)[0]
+    # Adjust weights based on Lumen insights
+    lumen_insights = get_latest_lumen_insights()
+    current_weights = [0.8, 0.2] # ok, minor_issues
+    if lumen_insights and "Enhance code generation model's robustness for complex ideas." in lumen_insights.get("suggested_improvements", []):
+        print("[CODE_GENERATOR] Adjusting generation based on Lumen insights: improving robustness.")
+        current_weights = [0.9, 0.1] # Increase success chance
+
+    outcome_post_ai = random.choices(['ok', 'minor_issues'], weights=current_weights, k=1)[0]
 
     if outcome_post_ai == 'minor_issues':
         status = "warnings"
