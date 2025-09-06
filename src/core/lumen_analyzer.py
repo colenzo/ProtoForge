@@ -1,6 +1,8 @@
 import asyncio
 from typing import List, Dict, Any
 from src.core.knowledge_logger import log_to_knowledge_vault
+from datetime import datetime
+import re
 
 # This would ideally be a persistent storage of logs
 _simulated_log_store: List[Dict[str, Any]] = []
@@ -38,29 +40,52 @@ async def analyze_logs_for_insights(logs: List[Dict[str, Any]]) -> Dict[str, Any
     return insights
 
 async def update_adaptation_loop(insights: Dict[str, Any]):
-    """Simulates updating the 02_ADAPTATION_LOOP.md based on Lumen insights."""
+    """Updates the 02_ADAPTATION_LOOP.md based on Lumen insights."""
     print("[LUMEN_ANALYZER] Updating Adaptation Loop with insights...")
-    # In a real scenario, this would involve reading, parsing, and writing to 02_ADAPTATION_LOOP.md
-    # For now, we'll just log the simulated update
     
-    adaptation_loop_update = {
-        "week_of": datetime.now().strftime("%Y-%m-%d"),
-        "shipped": "Lumen analysis performed.",
-        "learned": insights.get("suggested_improvements", ["No specific improvements suggested."]),
-        "blockers": "N/A",
-        "kpis": {"error_rate": insights.get("error_rate"), "warning_rate": insights.get("warning_rate")}
-    }
-    await log_to_knowledge_vault("adaptation_loop_updated", adaptation_loop_update, log_level="INFO", source_agent="LumenAnalyzer")
+    adaptation_loop_path = "/Users/corenzo/Documents/Code/02_ADAPTATION_LOOP.md"
+    
+    # Read current content
+    current_content_response = default_api.read_file(absolute_path=adaptation_loop_path)
+    current_content = current_content_response['read_file_response']['content']
+
+    # Prepare new entries
+    shipped_entry = f"- Lumen analysis performed. Error Rate: {insights.get('error_rate'):.2f}, Warning Rate: {insights.get('warning_rate'):.2f}."
+    learned_entry = "\n".join([f"- {s}" for s in insights.get('suggested_improvements', ["No specific improvements suggested."])])
+
+    # Find the current week's entry or create a new one
+    today = datetime.now().strftime("%B %d, %Y")
+    week_of_pattern = r"## Week of (.*?)\n"
+    
+    match = re.search(week_of_pattern, current_content)
+    
+    new_content = current_content
+    if match:
+        # Append to existing week if it's the same week (simplified check)
+        # For a real system, this would involve more robust date comparison
+        if today in match.group(0):
+            # Append to existing shipped and learned sections
+            new_content = re.sub(r"\n\*\*Shipped:\*\*.*", lambda m: m.group(0) + f"\n  {shipped_entry}", new_content, count=1)
+            new_content = re.sub(r"\n\*\*Learned:\*\*.*", lambda m: m.group(0) + f"\n  {learned_entry}", new_content, count=1)
+        else:
+            # Add a new week entry at the top
+            new_week_entry = f"\n## Week of {today}\n**Shipped:** {shipped_entry}\n**Learned:** {learned_entry}\n**Blockers:** [Current challenges]\n**KPIs:** [Metric updates]\n"
+            new_content = re.sub(r"# ADAPTATION LOOP", f"# ADAPTATION LOOP\n\n{new_week_entry}", new_content, count=1)
+    else:
+        # If no week entry found, add the first one
+        new_week_entry = f"\n## Week of {today}\n**Shipped:** {shipped_entry}\n**Learned:** {learned_entry}\n**Blockers:** [Current challenges]\n**KPIs:** [Metric updates]\n"
+        new_content = re.sub(r"# ADAPTATION LOOP", f"# ADAPTATION LOOP\n\n{new_week_entry}", new_content, count=1)
+
+    # Write updated content back to the file
+    default_api.write_file(file_path=adaptation_loop_path, content=new_content)
+    await log_to_knowledge_vault("adaptation_loop_updated", {"week_of": today, "shipped_entry": shipped_entry, "learned_entry": learned_entry}, log_level="INFO", source_agent="LumenAnalyzer")
 
 async def run_lumen_feedback_loop():
     """Simulates the continuous Lumen feedback loop."""
     while True:
         await asyncio.sleep(10) # Simulate periodic analysis (e.g., every 10 seconds for stress test)
         print("\n[LUMEN_ANALYZER] Initiating periodic Lumen feedback loop...")
-        # In a real system, logs would be fetched from a persistent store
-        # For this simulation, we'll use a dummy log store that accumulates
         
-        # This is a simplified way to get logs. In reality, Lumen would query the Knowledge Vault.
         current_logs = list(_simulated_log_store) # Get a snapshot of logs
         _simulated_log_store.clear() # Clear for next cycle (simplified)
 
