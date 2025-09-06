@@ -1,4 +1,5 @@
 import os # Import os module
+import asyncio # Import asyncio for sleep
 from src.agents.code_generator import generate_code, CodeGenerationInput, GeneratedCode
 from src.agents.testing_agent import run_tests, TestingInput, TestingOutput
 from src.agents.deployment_agent import deploy_application, DeploymentInput, DeploymentOutput
@@ -7,7 +8,7 @@ from src.agents.integration_agent import integrate_external_service, Integration
 from src.agents.infrastructure_agent import generate_infrastructure_code, InfrastructureInput, InfrastructureOutput
 from src.models.genesis_response import GenesisResponse
 from src.core.knowledge_logger import log_to_knowledge_vault
-from src.core.nexus_manager import perform_nexus_check, NexusCheckResult
+from src.core.nexus_manager import perform_nexus_check, NexusCheckResult, release_nexus_resource
 from src.core.file_writer import write_code_to_files # Import the new file_writer
 
 async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
@@ -20,16 +21,21 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
     integration_results = None
 
     async def _run_with_nexus_check(protocol_name: str, action: str, func, *args, **kwargs):
-        check_result = await perform_nexus_check(protocol_name, action)
-        if check_result.status == "conflict_detected":
-            await log_to_knowledge_vault(f"{protocol_name.lower().replace(' ', '_')}_conflict", {"idea": idea, "message": check_result.message}, log_level="ERROR", source_agent="NexusManager")
-            raise Exception(f"Nexus conflict detected: {check_result.message}")
-        elif check_result.status == "waiting_on_dependency":
-            await log_to_knowledge_vault(f"{protocol_name.lower().replace(' ', '_')}_waiting", {"idea": idea, "message": check_result.message}, log_level="WARNING", source_agent="NexusManager")
-            # In a real scenario, this might involve retries or a different handling
-            # For now, we'll just proceed after the simulated delay
-            pass
-        return await func(*args, **kwargs)
+        max_retries = 5
+        for attempt in range(max_retries):
+            check_result = await perform_nexus_check(protocol_name, action)
+            if check_result.status == "ok":
+                return await func(*args, **kwargs)
+            elif check_result.status == "conflict_detected":
+                await log_to_knowledge_vault(f"{protocol_name.lower().replace(' ', '_')}_conflict", {"idea": idea, "message": check_result.message}, log_level="ERROR", source_agent="NexusManager")
+                raise Exception(f"Nexus conflict detected: {check_result.message}")
+            elif check_result.status == "waiting_on_dependency" or check_result.status == "capacity_exceeded":
+                await log_to_knowledge_vault(f"{protocol_name.lower().replace(' ', '_')}_waiting", {"idea": idea, "message": check_result.message, "attempt": attempt + 1}, log_level="WARNING", source_agent="NexusManager")
+                await asyncio.sleep(random.uniform(1, 3)) # Simulate a delay before retry
+        
+        # If all retries fail
+        await log_to_knowledge_vault(f"{protocol_name.lower().replace(' ', '_')}_failed_retries", {"idea": idea, "message": f"Failed after {max_retries} retries due to {check_result.status}."}, log_level="ERROR", source_agent="NexusManager")
+        raise Exception(f"Nexus check failed after {max_retries} retries for {protocol_name} before {action}. Last status: {check_result.status}")
 
     # Define a base path for generated code output
     base_output_path = os.path.join(os.getcwd(), "generated_projects", idea.replace(" ", "_").lower())
@@ -39,6 +45,7 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
     try:
         generated_code = await _run_with_nexus_check("Code Generation", "start", generate_code, CodeGenerationInput(idea=idea))
         await log_to_knowledge_vault("code_generation_completed", {"idea": idea, "status": generated_code.status, "message": generated_code.message}, log_level="INFO", source_agent="CodeGenerator")
+        release_nexus_resource("Code Generation")
         
         if generated_code.status == "failure":
             await log_to_knowledge_vault("code_generation_failed_early_exit", {"idea": idea, "message": "Code generation failed, exiting orchestration."}, log_level="ERROR", source_agent="Orchestrator")
@@ -59,6 +66,7 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
         # 2. Security Scan (Aegis Protocol)
         security_report = await _run_with_nexus_check("Security Scan", "start", run_security_scan, generated_code.code)
         await log_to_knowledge_vault("security_scan_completed", {"idea": idea, "status": security_report.status, "findings_count": len(security_report.findings)}, log_level="INFO", source_agent="SecurityAgent")
+        release_nexus_resource("Security Scan")
         
         if security_report.status == "failed":
             await log_to_knowledge_vault("security_scan_failed_early_exit", {"idea": idea, "message": "Security scan failed, exiting orchestration."}, log_level="ERROR", source_agent="Orchestrator")
@@ -77,6 +85,7 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
         infrastructure_input = InfrastructureInput(application_code_summary=generated_code.code[:200]) # Pass a summary
         infrastructure_results = await _run_with_nexus_check("Infrastructure Generation", "start", generate_infrastructure_code, infrastructure_input)
         await log_to_knowledge_vault("infrastructure_generation_completed", {"idea": idea, "status": infrastructure_results.status, "iac_code_summary": infrastructure_results.iac_code[:100]}, log_level="INFO", source_agent="InfrastructureAgent")
+        release_nexus_resource("Infrastructure Generation")
         
         if infrastructure_results.status == "failed":
             await log_to_knowledge_vault("infrastructure_generation_failed_early_exit", {"idea": idea, "message": "Infrastructure generation failed, exiting orchestration."}, log_level="ERROR", source_agent="Orchestrator")
@@ -94,6 +103,7 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
         testing_input = TestingInput(code=generated_code.code, file_structure=generated_code.file_structure, dependencies=generated_code.dependencies)
         testing_results = await _run_with_nexus_check("Automated Testing", "start", run_tests, testing_input)
         await log_to_knowledge_vault("testing_completed", {"idea": idea, "overall_status": testing_results.status, "test_results_summary": [r.status for r in testing_results.test_results]}, log_level="INFO", source_agent="TestingAgent")
+        release_nexus_resource("Automated Testing")
         
         if testing_results.status == "failure":
             await log_to_knowledge_vault("testing_failed_early_exit", {"idea": idea, "message": "Automated testing failed, exiting orchestration."}, log_level="ERROR", source_agent="Orchestrator")
@@ -111,6 +121,7 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
         deployment_input = DeploymentInput(code=generated_code.code, test_status=testing_results.status, file_structure=generated_code.file_structure, dependencies=generated_code.dependencies, infrastructure_results=infrastructure_results)
         deployment_results = await _run_with_nexus_check("Automated Deployment", "start", deploy_application, deployment_input)
         await log_to_knowledge_vault("deployment_completed", {"idea": idea, "status": deployment_results.status, "url": deployment_results.deployment_url}, log_level="INFO", source_agent="DeploymentAgent")
+        release_nexus_resource("Automated Deployment")
         
         if deployment_results.status == "failure":
             await log_to_knowledge_vault("deployment_failed_early_exit", {"idea": idea, "message": "Automated deployment failed, exiting orchestration."}, log_level="ERROR", source_agent="Orchestrator")
@@ -129,6 +140,7 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
         integration_input = IntegrationInput(service_name="Dummy Analytics", api_endpoint="https://api.dummy-analytics.com", file_structure=generated_code.file_structure, dependencies=generated_code.dependencies, deployment_results=deployment_results)
         integration_results = await _run_with_nexus_check("External Service Integration", "start", integrate_external_service, integration_input)
         await log_to_knowledge_vault("integration_completed", {"idea": idea, "service": integration_input.service_name, "status": integration_results.status}, log_level="INFO", source_agent="IntegrationAgent")
+        release_nexus_resource("External Service Integration")
         
         # No early return for integration failure, as it's the last step, but we log it.
         
