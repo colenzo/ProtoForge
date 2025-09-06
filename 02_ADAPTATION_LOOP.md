@@ -42,6 +42,8 @@
 - Refined `src/core/knowledge_logger.py` to include `log_level`, `source_agent`, and `log_id` for more structured logging.
 - Updated `src/core/orchestrator.py` to utilize the enhanced `knowledge_logger` with detailed event logging.
 - Enhanced `src/agents/code_generator.py` to generate different types of code (e.g., Flask, Pandas, simple scripts) based on input idea keywords, and to dynamically generate file structures and dependencies.
+- Created `src/core/file_writer.py` to write generated code content to files based on a given file structure.
+- Updated `src/core/orchestrator.py` to call `write_code_to_files` after code generation, saving generated code to a `generated_projects` directory.
 - Enhanced `src/agents/testing_agent.py` to include `file_structure` and `dependencies` in its input, and to simulate more relevant test results based on code type.
 - Updated `src/core/orchestrator.py` to pass `file_structure` and `dependencies` to the `testing_agent`.
 - Enhanced `src/agents/deployment_agent.py` to include `file_structure`, `dependencies`, and `infrastructure_results` in its input, and to simulate more relevant deployment outcomes.

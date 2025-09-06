@@ -1,3 +1,4 @@
+import os # Import os module
 from src.agents.code_generator import generate_code, CodeGenerationInput, GeneratedCode
 from src.agents.testing_agent import run_tests, TestingInput, TestingOutput
 from src.agents.deployment_agent import deploy_application, DeploymentInput, DeploymentOutput
@@ -7,6 +8,7 @@ from src.agents.infrastructure_agent import generate_infrastructure_code, Infras
 from src.models.genesis_response import GenesisResponse
 from src.core.knowledge_logger import log_to_knowledge_vault
 from src.core.nexus_manager import perform_nexus_check, NexusCheckResult
+from src.core.file_writer import write_code_to_files # Import the new file_writer
 
 async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
     """Orchestrates the end-to-end Project Genesis process from idea to deployment."""
@@ -29,6 +31,10 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
             pass
         return await func(*args, **kwargs)
 
+    # Define a base path for generated code output
+    base_output_path = os.path.join(os.getcwd(), "generated_projects", idea.replace(" ", "_").lower())
+    os.makedirs(base_output_path, exist_ok=True) # Ensure the directory exists
+
     # 1. Code Generation
     try:
         generated_code = await _run_with_nexus_check("Code Generation", "start", generate_code, CodeGenerationInput(idea=idea))
@@ -45,6 +51,10 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
                 deployment_results=deployment_results,
                 integration_results=integration_results
             )
+
+        # Write generated code to files
+        await write_code_to_files(base_output_path, generated_code.file_structure, generated_code.code)
+        await log_to_knowledge_vault("code_written_to_files", {"idea": idea, "path": base_output_path, "file_structure": generated_code.file_structure}, log_level="INFO", source_agent="FileWriter")
 
         # 2. Security Scan (Aegis Protocol)
         security_report = await _run_with_nexus_check("Security Scan", "start", run_security_scan, generated_code.code)
