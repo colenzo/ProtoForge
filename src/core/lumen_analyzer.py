@@ -90,7 +90,7 @@ async def update_adaptation_loop(insights: Dict[str, Any]):
 
     # Prepare new entries
     shipped_entry = f"- Lumen analysis performed. Error Rate: {insights.get('error_rate'):.2f}, Warning Rate: {insights.get('warning_rate'):.2f}. Process Health Score: {insights.get('process_health_score')}."
-    learned_entry = "\n".join([f"- {s}" for s in insights.get('suggested_improvements', ["No specific improvements suggested."]])
+    learned_entry = "\n".join([f"- {s}" for s in insights.get('suggested_improvements', ["No specific improvements suggested."])])
 
     # Find the current week's entry or create a new one
     today = datetime.now().strftime("%B %d, %Y")
