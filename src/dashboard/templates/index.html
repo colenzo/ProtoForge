@@ -39,7 +39,35 @@
     <div id="genesis-response-container" class="genesis-response">
         {% if genesis_response %}
         <h2>Latest Project Genesis Output</h2>
-        <pre id="genesis-response-content">{{ genesis_response }}</pre>
+        <div id="genesis-response-content"></div>
+        <script>
+            const genesisResponse = {{ genesis_response | safe }};
+            const genesisResponseContent = document.getElementById('genesis-response-content');
+
+            // Display the full response in a <pre> tag
+            const pre = document.createElement('pre');
+            pre.textContent = JSON.stringify(genesisResponse, null, 2);
+            genesisResponseContent.appendChild(pre);
+
+            // Display agent instance IDs in a table
+            const agentIds = genesisResponse.agent_instance_ids;
+            if (agentIds) {
+                const table = document.createElement('table');
+                table.innerHTML = '<tr><th>Agent</th><th>PID</th><th>Action</th></tr>';
+                for (const agent in agentIds) {
+                    const row = table.insertRow();
+                    row.innerHTML = `<td>${agent}</td><td>${agentIds[agent]}</td><td><button onclick="killAgent(${agentIds[agent]})">Kill</button></td>`;
+                }
+                genesisResponseContent.appendChild(table);
+            }
+
+            function killAgent(pid) {
+                fetch(`/kill/${pid}`, { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => alert(data.message))
+                    .catch(error => console.error('Error:', error));
+            }
+        </script>
         {% endif %}
     </div>
 

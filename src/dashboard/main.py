@@ -48,6 +48,16 @@ async def submit_idea(request: Request, idea: str = Form(...)):
         print(f"[DASHBOARD] API returned an error: {e.response.status_code} - {e.response.text}")
         return HTMLResponse(content=f"<h1>API Error: {e.response.status_code}</h1><p>{e.response.text}</p>", status_code=e.response.status_code)
 
+@app.post("/kill/{pid}")
+async def kill_agent_process(pid: int):
+    try:
+        os.kill(pid, 9)  # 9 is SIGKILL
+        return {"message": f"Process {pid} killed."}
+    except ProcessLookupError:
+        return {"message": f"Process {pid} not found."}
+    except Exception as e:
+        return {"message": f"Error killing process {pid}: {e}"}
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
