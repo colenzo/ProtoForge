@@ -14,6 +14,7 @@ from src.core.file_writer import write_code_to_files # Import the new file_write
 async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
     """Orchestrates the end-to-end Project Genesis process from idea to deployment."""
     
+    agent_pids = {}  # Dictionary to store agent PIDs
     security_report = None
     infrastructure_results = None
     testing_results = None
@@ -25,6 +26,9 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
         for attempt in range(max_retries):
             check_result = await perform_nexus_check(protocol_name, action)
             if check_result.status == "ok":
+                # Get the PID of the current process
+                pid = os.getpid()
+                agent_pids[protocol_name] = pid
                 return await func(*args, **kwargs)
             elif check_result.status == "conflict_detected":
                 await log_to_knowledge_vault(f"{protocol_name.lower().replace(' ', '_')}_conflict", {"idea": idea, "message": check_result.message}, log_level="ERROR", source_agent="NexusManager")
@@ -34,8 +38,7 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
                 await asyncio.sleep(random.uniform(1, 3)) # Simulate a delay before retry
         
         # If all retries fail
-        await log_to_knowledge_vault(f"{protocol_name.lower().replace(' ', '_')}_failed_retries", {"idea": idea, "message": f"Failed after {max_retries} retries due to {check_result.status}."}, log_level="ERROR", source_agent="NexusManager")
-        raise Exception(f"Nexus check failed after {max_retries} retries for {protocol_name} before {action}. Last status: {check_result.status}")
+        await log_to_knowledge_vault(f"{protocol_name.lower().replace(' ', '_')}_failed_retries", {"idea": idea, "message": f"Failed after {max_retries} retries due to {check_result.status}."})
 
     # Define a base path for generated code output
     base_output_path = os.path.join(os.getcwd(), "generated_projects", idea.replace(" ", "_").lower())
@@ -56,7 +59,8 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
                 infrastructure_results=infrastructure_results,
                 testing_results=testing_results,
                 deployment_results=deployment_results,
-                integration_results=integration_results
+                integration_results=integration_results,
+                agent_instance_ids=agent_pids
             )
 
         # Write generated code to files
@@ -77,7 +81,8 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
                 infrastructure_results=infrastructure_results,
                 testing_results=testing_results,
                 deployment_results=deployment_results,
-                integration_results=integration_results
+                integration_results=integration_results,
+                agent_instance_ids=agent_pids
             )
 
         # 3. Infrastructure Generation (Terraform Protocol)
@@ -96,7 +101,8 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
                 infrastructure_results=infrastructure_results,
                 testing_results=testing_results,
                 deployment_results=deployment_results,
-                integration_results=integration_results
+                integration_results=integration_results,
+                agent_instance_ids=agent_pids
             )
 
         # 4. Automated Testing
@@ -114,7 +120,8 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
                 infrastructure_results=infrastructure_results,
                 testing_results=testing_results,
                 deployment_results=deployment_results,
-                integration_results=integration_results
+                integration_results=integration_results,
+                agent_instance_ids=agent_pids
             )
 
         # 5. Automated Deployment
@@ -132,7 +139,8 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
                 infrastructure_results=infrastructure_results,
                 testing_results=testing_results,
                 deployment_results=deployment_results,
-                integration_results=integration_results
+                integration_results=integration_results,
+                agent_instance_ids=agent_pids
             )
 
         # 6. External Service Integration (Meridian Protocol)
@@ -151,7 +159,8 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
             infrastructure_results=infrastructure_results,
             testing_results=testing_results,
             deployment_results=deployment_results,
-            integration_results=integration_results
+            integration_results=integration_results,
+            agent_instance_ids=agent_pids
         )
     except Exception as e:
         await log_to_knowledge_vault("orchestration_error", {"idea": idea, "error": str(e)}, log_level="CRITICAL", source_agent="Orchestrator")

@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from src.agents.code_generator import GeneratedCode
 from src.agents.testing_agent import TestingOutput, TestResult
@@ -16,4 +16,5 @@ class GenesisResponse(BaseModel):
     security_report: Optional[SecurityReport] = None
     integration_results: Optional[IntegrationResult] = None
     infrastructure_results: Optional[InfrastructureOutput] = None
+    agent_instance_ids: Dict[str, int] = {} # New field for agent instance IDs
     # Potentially add more fields for deployment results, etc.
