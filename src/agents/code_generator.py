@@ -15,7 +15,7 @@ class CodeGenerationInput(BaseModel):
 class GeneratedCode(BaseModel):
     status: str
     message: str
-    code: str
+    code: str # This will now contain concatenated content for multiple files
     file_structure: Dict[str, List[str]] = {}
     dependencies: List[str] = []
 
@@ -34,27 +34,41 @@ async def _call_ai_code_model(prompt: str) -> Dict[str, Any]:
     # Simulate different model responses based on prompt keywords
     if "web app" in prompt.lower() or "flask" in prompt.lower():
         generated_text = f"""
+--- FILE: app/app.py ---
 from flask import Flask
 app = Flask(__name__)
 
 @app.route('/')
 def hello_flask():
     return 'Hello, Flask Web App! Idea: {prompt}'
+
+--- FILE: templates/index.html ---
+<!DOCTYPE html>
+<html>
+<head><title>Flask App</title></head>
+<body><h1>Welcome!</h1></body>
+</html>
 """
         return {"status": "success", "message": "Model generated Flask app.", "generated_text": generated_text, "type": "flask"}
     elif "data analysis" in prompt.lower() or "pandas" in prompt.lower():
         generated_text = f"""
+--- FILE: scripts/analyze.py ---
 import pandas as pd
 
 def analyze_data_model(data):
     df = pd.DataFrame(data)
     return df.describe().to_dict()
+
+--- FILE: data/sample.csv ---
+header1,header2
+value1,value2
 """
         return {"status": "success", "message": "Model generated Pandas script.", "generated_text": generated_text, "type": "pandas"}
     elif "error" in prompt.lower() or random.random() < 0.1: # Simulate occasional model errors
         return {"status": "error", "message": "AI model encountered an internal error.", "generated_text": ""}
     else:
         generated_text = f"""
+--- FILE: src/main.py ---
 # Generic AI-generated code for: {prompt}
 print("Hello from AI!")
 """
