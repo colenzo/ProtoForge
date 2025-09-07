@@ -68,7 +68,7 @@ async def orchestrate_genesis_process(idea: str) -> GenesisResponse:
         await log_to_knowledge_vault("code_written_to_files", {"idea": idea, "path": base_output_path, "file_structure": generated_code.file_structure}, log_level="INFO", source_agent="FileWriter")
 
         # 2. Security Scan (Aegis Protocol)
-        security_report = await _run_with_nexus_check("Security Scan", "start", run_security_scan, generated_code.code)
+        security_report = await run_security_scan(generated_code.code)
         await log_to_knowledge_vault("security_scan_completed", {"idea": idea, "status": security_report.status, "findings_count": len(security_report.findings)}, log_level="INFO", source_agent="SecurityAgent")
         release_nexus_resource("Security Scan")
         

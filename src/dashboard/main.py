@@ -1,3 +1,10 @@
+import sys
+import os
+
+# Redirect stdout to a log file
+log_file_path = os.path.join(os.path.dirname(__file__), "dashboard_debug.log")
+sys.stdout = open(log_file_path, "a")
+
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Form, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -7,6 +14,7 @@ import httpx # For making HTTP requests to the main API
 import os # Import os module
 
 app = FastAPI()
+print("[DEBUG] FastAPI app initialized.")
 templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates")) # Ensure absolute path
 
 # In-memory store for logs (for demonstration purposes)
@@ -30,6 +38,7 @@ async def receive_log(log_entry: Dict[str, Any]):
         await connection.send_text(json.dumps(log_entry))
     return {"message": "Log received"}
 
+print("[DEBUG] Registering /submit_idea POST route.")
 @app.post("/submit_idea")
 async def submit_idea(request: Request, idea: str = Form(...)):
     print(f"[DASHBOARD] Received idea from UI: {idea}")
@@ -48,15 +57,23 @@ async def submit_idea(request: Request, idea: str = Form(...)):
         print(f"[DASHBOARD] API returned an error: {e.response.status_code} - {e.response.text}")
         return HTMLResponse(content=f"<h1>API Error: {e.response.status_code}</h1><p>{e.response.text}</p>", status_code=e.response.status_code)
 
-@app.post("/kill/{pid}")
-async def kill_agent_process(pid: int):
+print("[DEBUG] Registering /trigger_genesis GET route.")
+@app.get("/trigger_genesis")
+async def trigger_genesis(idea: str):
+    print(f"[DASHBOARD] Received idea from URL: {idea}")
     try:
-        os.kill(pid, 9)  # 9 is SIGKILL
-        return {"message": f"Process {pid} killed."}
-    except ProcessLookupError:
-        return {"message": f"Process {pid} not found."}
-    except Exception as e:
-        return {"message": f"Error killing process {pid}: {e}"}
+        async with httpx.AsyncClient() as client:
+            response = await client.post(PROJECT_GENESIS_API_URL, json={"idea": idea})
+            response.raise_for_status()
+            genesis_response = response.json()
+            print(f"[DASHBOARD] Project Genesis API response: {json.dumps(genesis_response, indent=2)}")
+            return templates.TemplateResponse("index.html", {"request": Request({"type": "http"}), "logs": log_store, "genesis_response": json.dumps(genesis_response, indent=2)})
+    except httpx.RequestError as e:
+        print(f"[DASHBOARD] Error connecting to Project Genesis API: {e}")
+        return HTMLResponse(content=f"<h1>Error: Could not connect to Project Genesis API. Is it running?</h1><p>{e}</p>", status_code=500)
+    except httpx.HTTPStatusError as e:
+        print(f"[DASHBOARD] API returned an error: {e.response.status_code} - {e.response.text}")
+        return HTMLResponse(content=f"<h1>API Error: {e.response.status_code}</h1><p>{e.response.text}</p>", status_code=e.response.status_code)
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -71,6 +88,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
 if __name__ == "__main__":
     import uvicorn
+    print("[DEBUG] Entering __main__ block.")
     print("\nProject Genesis Dashboard starting...")
     print("Access dashboard at: http://localhost:8001")
     print("Log API endpoint: http://localhost:8001/log (POST)")

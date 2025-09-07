@@ -77,14 +77,14 @@ FROM python:3.9-slim-buster
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install -r requirements.txt
-COPY app/app.py .
+COPY app/app.py . 
 EXPOSE 5000
 CMD ["python", "app.py"] 
 """
             # Create a dummy requirements.txt for Flask app
             with open(os.path.join(tmpdir, "requirements.txt"), "w") as f:
                 f.write("flask\n")
-elif "pandas" in input.dependencies:
+        elif "pandas" in input.dependencies:
             dockerfile_content = f"""
 FROM python:3.9-slim-buster
 WORKDIR /app
@@ -95,7 +95,7 @@ CMD ["python", "analyze.py"]
 """
             with open(os.path.join(tmpdir, "requirements.txt"), "w") as f:
                 f.write("pandas\nnumpy\n")
-else:
+        else:
             dockerfile_content = f"""
 FROM python:3.9-slim-buster
 WORKDIR /app
@@ -151,7 +151,7 @@ CMD ["python", "main.py"]
 
         except docker.errors.BuildError as e:
             deployment_message = f"Docker image build failed: {e}"
-            print(f"[DEPLOYMENT_AGENT] Docker build error: {e}")
+            print(f"[DEPLOY_AGENT] Docker build error: {e}")
         except docker.errors.APIError as e:
             deployment_message = f"Docker API error during deployment: {e}"
             print(f"[DEPLOYMENT_AGENT] Docker API error: {e}")

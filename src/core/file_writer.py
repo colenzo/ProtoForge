@@ -31,7 +31,7 @@ async def write_code_to_files(base_path: str, file_structure: Dict[str, List[str
         os.makedirs(target_dir, exist_ok=True)
 
         for file_name in file_list:
-            full_path_in_content = os.path.join(dir_name, file_name).replace("\", "/") # Normalize path for lookup
+            full_path_in_content = os.path.join(dir_name, file_name).replace("\\\\", "/") # Normalize path for lookup
             
             if full_path_in_content in files_data:
                 target_file_path = os.path.join(target_dir, file_name)

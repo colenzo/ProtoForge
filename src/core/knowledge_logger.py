@@ -3,7 +3,12 @@ from typing import Any, Dict, Optional
 import uuid
 import requests
 import json
-from src.core.lumen_analyzer import add_log_to_simulated_store
+import requests
+import json
+from typing import List, Dict, Any, Optional
+
+# This would ideally be a persistent storage of logs
+_simulated_log_store: List[Dict[str, Any]] = []
 
 # Dashboard API endpoint for logs
 DASHBOARD_LOG_URL = "http://localhost:8001/log"
@@ -30,3 +35,13 @@ async def log_to_knowledge_vault(event_type: str, data: Dict[str, Any], log_leve
         print(f"[KNOWLEDGE_LOGGER] Failed to send log to dashboard: {e}")
     
     # In a real implementation, this would write to a persistent database, file, or message queue
+
+def add_log_to_simulated_store(log_entry: Dict[str, Any]):
+    """Adds a log entry to the in-memory simulated store."""
+    _simulated_log_store.append(log_entry)
+
+def get_and_clear_log_store() -> List[Dict[str, Any]]:
+    """Returns a copy of the current log store and clears the original."""
+    store_copy = list(_simulated_log_store)
+    _simulated_log_store.clear()
+    return store_copy

@@ -18,3 +18,7 @@ async def process_idea(idea_input: IdeaInput):
     response = await orchestrate_genesis_process(idea_input.idea)
     
     return response
+
+@router.get("/test")
+async def test_route():
+    return {"message": "test route works"}

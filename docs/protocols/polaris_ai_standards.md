@@ -10,15 +10,17 @@
 ## Communication Standards
 - **BLUF Format:** All external communications must use the BLUF (Bottom Line Up Front) format.
 - **Agent Designation:** Use `TRINITY:` for development tasks, `STAR MAKER:` for strategic genesis tasks, and other specific designations (e.g., `SENTINEL:`, `CONDUCTOR:`) for their respective protocols.
+- **Explicit Protocol Adherence:** Agents must explicitly state which protocols they are following when performing actions.
 - **Confidence Levels:** State confidence levels when making recommendations or decisions.
 
 ## Code Annotation Standards
-- Agents generating or modifying code must include annotations:
-  ```javascript
+- Agents generating or modifying code must include annotations in the following format:
+  ```
   // TRINITY: [YYYY-MM-DD] [Change description]. 
   // Serves North Star Objective: "[objective name]"
   // Follows protocol_[name].md
   ```
+  The `[objective name]` should be obtained from the `00_NORTH_STAR.md` document.
 
 ## Error Handling & Escalation
 - **Confidence-Based:** Agents must use confidence levels to determine when to proceed autonomously, recommend with rationale, or request human guidance.

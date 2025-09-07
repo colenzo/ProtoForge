@@ -3,10 +3,9 @@
 ## Development Protocols
 - Git Flow: `docs/protocols/git_flow.md`
 - AI Agent Standards: `docs/protocols/ai_agent_standards.md`
+- AI Assistant Operating Protocol: `docs/protocols/polaris_ai_assistant_protocol.md`
 - Testing: `docs/protocols/testing.md`
-- Deployment: `docs/protocols/deployment.md`
-- Security: `docs/protocols/security.md`
-- Integration: `docs/protocols/integration.md`
+
 
 ## Template Library
 - Feature Spec: `.trinity/templates/feature_spec.md`
